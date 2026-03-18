@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matrix API</title>
+</head>
+<body>
+
+<h1>get</h1>
+
+<script>
+(async function () {
+    const path = window.location.pathname;
+
+    if (!path.startsWith("/img/")) {
+        document.getElementById("output").textContent =
+            "Use: /img/<base64-url>";
+        return;
+    }
+
+    try {
+        // 🔥 ดึง encoded URL
+        const encoded = path.replace("/img/", "");
+        const url = atob(encoded);
+
+        // โหลดรูป (แก้ CORS ด้วย proxy)
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+
+        await new Promise((res, rej) => {
+            img.onload = res;
+            img.onerror = rej;
+        });
+
+        const size = 50;
+
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = size;
+        canvas.height = size;
+
+        ctx.drawImage(img, 0, 0, size, size);
+
+        const imageData = ctx.getImageData(0, 0, size, size);
+        const data = imageData.data;
+
+        let matrix = [];
+
+        for (let y = 0; y < size; y++) {
+            let row = [];
+
+            for (let x = 0; x < size; x++) {
+                const idx = (y * size + x) * 4;
+
+                const r = data[idx];
+                const g = data[idx + 1];
+                const b = data[idx + 2];
+
+                row.push([r, g, b]);
+            }
+
+            matrix.push(row);
+        }
+
+        document.body.innerHTML = "<pre>" + JSON.stringify({ matrix }) + "</pre>";
+
+    } catch (err) {
+        document.getElementById("output").textContent =
+            "Error: โหลดรูปไม่ได้ / URL ผิด / CORS";
+    }
+})();
+</script>
+
+</body>
+</html>
